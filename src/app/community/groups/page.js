@@ -19,8 +19,10 @@ import {
 import { Select, SelectTrigger, SelectContent, SelectItem, SelectValue } from "@/components/ui/select"
 import toast from "react-hot-toast"
 import { useUserStore } from "@/store/store"
+import { useRouter } from "next/navigation"
 
 export default function GroupsPage() {
+  const router = useRouter();
   const {userId} = useUserStore();
   const [groups, setGroups] = useState([
     {
@@ -37,7 +39,7 @@ export default function GroupsPage() {
       topic: "SaaS",
       icon: "💡",
     },
-  ])
+  ]);
 
   const getGroups = async() => {
      const req = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/groups/get-groups`)
@@ -59,7 +61,32 @@ export default function GroupsPage() {
     visibility: "Public",
     topic: "",
     icon: "",
-  })
+  });
+
+  const joinGroup = async(groupId) => {
+    toast.loading("Joining the group");
+    const req = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/groups/join-group`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        "Authorization": `Bearer ${localStorage.getItem("token")}`
+      },
+      body: JSON.stringify({     
+        groupId: groupId
+      }),
+    });
+    const res = await req.json();
+    toast.dismiss();
+    if (res.type == "success") {
+      toast.success(res.message);
+      if (res.isPublic) {
+        router.push(`/community/groups/${groupId}`)
+      }
+    }
+    else {
+      toast.error(res.message);
+    }
+  }
 
   const handleCreateGroup = async() => {
     if (!newGroup.name || !newGroup.description) return
@@ -209,7 +236,9 @@ export default function GroupsPage() {
         </Button>
         </>
       ) : (
-        <Button variant="outline" className="w-full mt-2">
+        <Button onClick={()=> {
+          joinGroup(group._id);
+        }} variant="outline" className="w-full mt-2">
           <Users className="w-4 h-4 mr-2" /> Join Group
         </Button>
       )}
