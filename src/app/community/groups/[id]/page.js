@@ -1,10 +1,10 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useParams } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Users } from "lucide-react";
+import { Router, Users } from "lucide-react";
 import { useUserStore } from "@/store/store";
 import toast from "react-hot-toast";
 
@@ -15,7 +15,39 @@ export default function GroupPage() {
   const [posts, setPosts] = useState([]);
   const [content, setContent] = useState("");
   const [members, setMembers] = useState([]);
-  const [membershipStatus, setMembershipStatus] = useState("checking")
+  const [membershipStatus, setMembershipStatus] = useState("checking");
+  const [isAdmin, setIsAdmin] = useState(false);
+  const [adminData, setAdminData] = useState(null);
+
+  const router = useRouter();
+
+
+  const handleLeaveGroup = async (memberId) => {
+  if (!confirm("Are you sure you want to leave this group?")) return;
+
+  try {
+    const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/groups/leave-group`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${localStorage.getItem("token")}`
+      },
+      body: JSON.stringify({ groupId: id })
+    });
+
+    const data = await res.json();
+    
+    if (data.type === "success") {
+      toast.success("You have left the group");
+      router.push("/community/groups");
+    } else {
+      toast.error(data.message);
+    }
+  } catch (error) {
+
+    toast.error(error.message);
+  }
+};
 
 
 const checkGroupMembership = async () => {
@@ -33,6 +65,8 @@ const checkGroupMembership = async () => {
       .then(data => {
         console.log(data)
         setMembershipStatus(data.status);
+        const isAdmin = data.status === 'admin';
+        setIsAdmin(isAdmin);
       });
 }
 
@@ -50,7 +84,12 @@ const checkGroupMembership = async () => {
       }),
     })
       .then(res => res.json())
-      .then(data => setGroup(data.group));
+      .then(data => {
+        setGroup(data.group)
+        setAdminData(data.group.createdBy);
+      
+      });
+
 
     fetch(`${process.env.NEXT_PUBLIC_API_URL}/posts/get-group-posts`, {
       method: "POST",
@@ -92,7 +131,7 @@ const checkGroupMembership = async () => {
 
   if (!group) return <p className="p-10 text-center">Loading...</p>;
 
-  const isAdmin = group.createdBy === userId;
+
 
   if (membershipStatus === "checking") {
   return <p className="p-10 text-center text-muted-foreground">Checking group membership...</p>;
@@ -194,16 +233,40 @@ return (
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-3 max-h-[400px] overflow-y-auto">
-            {members.map((member) => (
-              <div key={member._id} className="flex items-center gap-3 text-sm">
-                <span className="font-medium">
-                  {member.user.fullName} <span className="text-gray-400">@{member.user.username}</span>
-                </span>
-                {member.user._id === group.createdBy && (
+            {
+              adminData && (
+              <div className="flex items-center justify-between gap-3 text-sm mb-4">
+                <div className="flex items-center gap-2">
+                  <span className="font-medium">
+                    {adminData.fullName} <span className="text-gray-400">@{adminData.username}</span>
+                  </span>
                   <span className="text-xs text-primary">(Admin)</span>
-                )}
+                </div>
               </div>
-            ))}
+              )
+            }
+           {members.map((member) => (
+  <div key={member._id} className="flex items-center justify-between gap-3 text-sm">
+    <div className="flex items-center gap-2">
+      <span className="font-medium">
+        {member.user.fullName} <span className="text-gray-400">@{member.user.username}</span>
+      </span>
+      {member.user._id === group.createdBy && (
+        <span className="text-xs text-primary">(Admin)</span>
+      )}
+    </div>
+    {member.user._id === userId && member.user._id !== group.createdBy && (
+      <Button 
+        variant="ghost" 
+        size="sm" 
+        className="text-xs text-red-600 hover:text-red-700"
+        onClick={() => handleLeaveGroup(member._id)}
+      >
+        Leave
+      </Button>
+    )}
+  </div>
+))}
           </CardContent>
         </Card>
       </aside>

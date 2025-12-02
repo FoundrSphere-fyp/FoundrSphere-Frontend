@@ -20,10 +20,12 @@ import { Select, SelectTrigger, SelectContent, SelectItem, SelectValue } from "@
 import toast from "react-hot-toast"
 import { useUserStore } from "@/store/store"
 import { useRouter } from "next/navigation"
+import Link from "next/link"
 
 export default function GroupsPage() {
   const router = useRouter();
   const {userId} = useUserStore();
+  const [userGroups, setUserGroups] = useState([]);
   const [groups, setGroups] = useState([
     {
       name: "AI Founders Network",
@@ -40,6 +42,30 @@ export default function GroupsPage() {
       icon: "💡",
     },
   ]);
+
+  
+
+const getUserGroups = async () => {
+   fetch(`${process.env.NEXT_PUBLIC_API_URL}/groups/get-user-groups`, {
+        method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        "Authorization": `Bearer ${localStorage.getItem("token")}`
+      }
+    })
+      .then(res => res.json())
+      .then(data => {
+        console.log(data)
+        console.log(data)
+        if(data.type === "success") {
+          setUserGroups(data.groups);
+
+        }
+        else {
+          toast.error(data.message);
+        }
+      });
+}
 
   const getGroups = async() => {
      const req = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/groups/get-groups`)
@@ -110,8 +136,14 @@ export default function GroupsPage() {
     }
   }
 
+
+  const runFunctions = async() => {
+    await getUserGroups();
+    await getGroups();
+  }
+
   useEffect(() => {
-    getGroups();
+    runFunctions();
   }, [])
 
   return (
@@ -121,6 +153,7 @@ export default function GroupsPage() {
         <div className="flex flex-col sm:flex-row justify-between items-center gap-4">
           <div>
             <h1 className="text-3xl font-bold">Founder Groups 👥</h1>
+            <h1 className="text-3xl font-bold">User id: {userId}</h1>
             <p className="text-muted-foreground">
               Discover, join, and create communities around your startup interests.
             </p>
@@ -212,10 +245,14 @@ export default function GroupsPage() {
         >
         {groups.map((group, idx) => (
   <Card key={idx} className="hover:shadow-lg transition">
+    {
+      console.log(group)
+    }
     <CardHeader className="flex items-center gap-3">
       <CardTitle className="flex items-center gap-2 text-lg font-semibold">
         <span className="text-2xl">{group.icon || "🌐"}</span>
         {group.name}
+        {group.createdBy?._id}
       </CardTitle>
     </CardHeader>
     <CardContent className="space-y-2">
@@ -225,23 +262,38 @@ export default function GroupsPage() {
         <span>Visibility: <b>{group.visibility}</b></span>
       </div>
 
-      {/* Check if current user is the creator */}
-      {group.createdBy?._id === userId ? (
-        <>
-        <div className="w-full mt-2 text-center text-xs font-medium text-green-600">
-          ✅ You are the admin of this group
-        </div>
-        <Button variant="outline" className="w-full mt-2">
-          <Users className="w-4 h-4 mr-2" /> View Group
-        </Button>
-        </>
-      ) : (
-        <Button onClick={()=> {
-          joinGroup(group._id);
-        }} variant="outline" className="w-full mt-2">
-          <Users className="w-4 h-4 mr-2" /> Join Group
-        </Button>
-      )}
+    {group.createdBy?._id === userId ? (
+  // User is admin
+  <>
+    <div className="w-full mt-2 text-center text-xs font-medium text-green-600">
+      ✅ You are the admin of this group
+    </div>
+    <Link href={`/community/groups/${group._id}`}>
+      <Button variant="outline" className="w-full mt-2">
+        <Users className="w-4 h-4 mr-2" /> View Group
+      </Button>
+    </Link>
+  </>
+) : userGroups.some(userGroup => userGroup.group?._id === group._id || userGroup._id === group._id) ? (
+  // User is a member
+  <>
+    <div className="w-full mt-2 text-center text-xs font-medium text-blue-600">
+      ✅ You are a member of this group
+    </div>
+    <Link href={`/community/groups/${group._id}`}>
+      <Button variant="outline" className="w-full mt-2">
+        <Users className="w-4 h-4 mr-2" /> View Group
+      </Button>
+    </Link>
+  </>
+) : (
+  // User is not admin or member
+  <Button onClick={() => {
+    joinGroup(group._id);
+  }} variant="outline" className="w-full mt-2">
+    <Users className="w-4 h-4 mr-2" /> Join Group
+  </Button>
+)}
     </CardContent>
   </Card>
 ))}

@@ -14,7 +14,7 @@ import toast from "react-hot-toast"
 
 export default function page() {
   const router = useRouter();
-  const {SetUsername, SetIsLoggedIn} = useUserStore();
+  const {SetUsername, SetIsLoggedIn, SetUserId} = useUserStore();
   const [step, setStep] = React.useState(1)
   const [formData, setFormData] = React.useState({
     username: "",
@@ -53,8 +53,10 @@ export default function page() {
     console.log(res);
     if(res.type =="success") {
       toast.success("Logged in Successfully");
+      console.log(res.user);
       SetUsername(res.user.username);
       SetIsLoggedIn(true)
+      SetUserId(res.user.userId)
       localStorage.setItem("token", res.token)
       router.push("/dashboard")
     }

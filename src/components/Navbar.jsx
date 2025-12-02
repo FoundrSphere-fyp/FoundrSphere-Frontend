@@ -84,7 +84,7 @@ export function Navbar() {
     if (res.type === "success") {
       SetIsLoggedIn(true);
       SetUsername(res.user.username)
-      SetUserId(res.user.userId)
+      SetUserId(res.user._id)
     } else {
       SetIsLoggedIn(false);
     }
