@@ -57,7 +57,8 @@ export default function page() {
       SetUsername(res.user.username);
       SetIsLoggedIn(true)
       SetUserId(res.user.userId)
-      localStorage.setItem("token", res.token)
+      localStorage.setItem("token", res.token);
+      localStorage.setItem("userId", res.user.userId);
       router.push("/dashboard")
     }
     else {

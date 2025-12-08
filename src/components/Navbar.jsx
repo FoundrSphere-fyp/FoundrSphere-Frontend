@@ -65,7 +65,7 @@ export function Navbar() {
 
   
   
-  const {isLoggedIn, SetIsLoggedIn, SetUsername, username, SetUserId} = useUserStore();
+  const {isLoggedIn, userId, SetIsLoggedIn, SetUsername, username, SetUserId} = useUserStore();
 
   const verifyToken = async() => {
     let token = localStorage.getItem("token");
@@ -172,6 +172,7 @@ export function Navbar() {
               </DropdownMenuTrigger>
               <DropdownMenuContent className="w-56" align="end">
                 <DropdownMenuLabel>Welcome, {username}</DropdownMenuLabel>
+                <DropdownMenuLabel>{userId}</DropdownMenuLabel>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem>Profile</DropdownMenuItem>
                 <DropdownMenuItem>Settings</DropdownMenuItem>
