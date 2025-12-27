@@ -29,8 +29,6 @@ export default function GroupPage() {
 
   const router = useRouter();
 
-  // ...existing code for handleLeaveGroup, checkGroupMembership, useEffect...
-
   const handleLeaveGroup = async (memberId) => {
     if (!confirm("Are you sure you want to leave this group?")) return;
 
@@ -70,7 +68,6 @@ export default function GroupPage() {
     })
       .then(res => res.json())
       .then(data => {
-        console.log(data)
         setMembershipStatus(data.status);
         const isAdmin = data.status === 'admin';
         setIsAdmin(isAdmin);
@@ -119,7 +116,6 @@ export default function GroupPage() {
       .then(data => setMembers(data.members || []));
   }, [id]);
 
-  // Handle file selection
   const handleFileSelect = (e) => {
     const files = Array.from(e.target.files);
     
@@ -148,14 +144,12 @@ export default function GroupPage() {
     });
   };
 
-  // Remove file from selection
   const handleRemoveFile = (index) => {
     setSelectedFiles(prev => prev.filter((_, i) => i !== index));
     setPreviews(prev => prev.filter((_, i) => i !== index));
     setUploadedAssets(prev => prev.filter((_, i) => i !== index));
   };
 
-  // Upload files to Cloudinary
   const handleUploadFiles = async () => {
     if (selectedFiles.length === 0) return [];
 
@@ -244,7 +238,6 @@ export default function GroupPage() {
     }
   };
 
-  // Handle like toggle
   const handleLikeToggle = async (postId) => {
     try {
       const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/posts/toggle-like`, {
@@ -259,7 +252,6 @@ export default function GroupPage() {
       const data = await res.json();
       
       if (data.type === "success") {
-        // Update local state
         setPosts(posts.map(post => 
           post._id === postId 
             ? { 
@@ -274,6 +266,11 @@ export default function GroupPage() {
     } catch (error) {
       toast.error("Failed to like post");
     }
+  };
+
+  // Navigate to post detail page
+  const handleOpenPost = (postId) => {
+    router.push(`/community/groups/${id}/posts/${postId}`);
   };
 
   if (!group) return <p className="p-10 text-center">Loading...</p>;
@@ -298,7 +295,7 @@ export default function GroupPage() {
       <div className="max-w-xl mx-auto p-10 text-center space-y-4">
         <h2 className="text-2xl font-semibold text-red-500">Request Rejected ❌</h2>
         <p className="text-muted-foreground">
-          Your request to join <b>{group?.name}</b> was rejected. You may contact the admin if you think this is a mistake.
+          Your request to join <b>{group?.name}</b> was rejected.
         </p>
       </div>
     );
@@ -355,7 +352,6 @@ export default function GroupPage() {
             disabled={posting || uploading}
           />
 
-          {/* File Previews */}
           {previews.length > 0 && (
             <div className="mt-4 grid grid-cols-2 md:grid-cols-3 gap-4">
               {previews.map((preview, index) => (
@@ -398,7 +394,6 @@ export default function GroupPage() {
             </div>
           )}
 
-          {/* Action Buttons */}
           <div className="mt-4 flex items-center justify-between">
             <div className="flex items-center gap-2">
               <label className="flex items-center gap-2 px-4 py-2 bg-secondary hover:bg-secondary/80 rounded-md cursor-pointer transition-colors">
@@ -439,7 +434,7 @@ export default function GroupPage() {
           </div>
         </Card>
 
-        {/* Posts List with Enhanced Design */}
+        {/* Posts List */}
         <div className="space-y-6">
           {posts.map((post) => (
             <PostCard 
@@ -447,13 +442,14 @@ export default function GroupPage() {
               post={post} 
               userId={userId}
               onLike={handleLikeToggle}
+              onReadMore={handleOpenPost}
             />
           ))}
         </div>
 
       </div>
 
-      {/* RIGHT SIDEBAR MEMBERS */}
+      {/* RIGHT SIDEBAR */}
       <aside className="col-span-1 space-y-4">
         <Card className="shadow-md">
           <CardHeader>
@@ -502,8 +498,8 @@ export default function GroupPage() {
   );
 }
 
-// Enhanced Post Card Component with Carousel
-function PostCard({ post, userId, onLike }) {
+// Post Card Component
+function PostCard({ post, userId, onLike, onReadMore }) {
   const [currentMediaIndex, setCurrentMediaIndex] = useState(0);
   
   const nextMedia = () => {
@@ -537,6 +533,11 @@ function PostCard({ post, userId, onLike }) {
       .join('')
       .toUpperCase()
       .slice(0, 2);
+  };
+
+  const truncateText = (text, maxLength = 200) => {
+    if (!text || text.length <= maxLength) return text;
+    return text.substring(0, maxLength) + '...';
   };
 
   return (
@@ -578,14 +579,22 @@ function PostCard({ post, userId, onLike }) {
       {/* Post Content */}
       {post.content && (
         <div className="px-4 py-3">
-          <p className="text-sm whitespace-pre-wrap">{post.content}</p>
+          <p className="text-sm whitespace-pre-wrap">{truncateText(post.content)}</p>
+          {post.content.length > 200 && (
+            <Button 
+              variant="link" 
+              className="p-0 h-auto text-primary text-sm mt-1"
+              onClick={() => onReadMore(post._id)}
+            >
+              Read More
+            </Button>
+          )}
         </div>
       )}
 
       {/* Media Carousel */}
       {post.media && post.media.length > 0 && (
-        <div className="relative bg-black">
-          {/* Current Media */}
+        <div className="relative bg-black cursor-pointer" onClick={() => onReadMore(post._id)}>
           <div className="aspect-video">
             {post.media[currentMediaIndex].type === 'image' ? (
               <img 
@@ -596,17 +605,18 @@ function PostCard({ post, userId, onLike }) {
             ) : (
               <video 
                 src={post.media[currentMediaIndex].url} 
-                controls 
                 className="w-full h-full object-contain"
               />
             )}
           </div>
 
-          {/* Navigation Arrows */}
           {post.media.length > 1 && (
             <>
               <button
-                onClick={prevMedia}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  prevMedia();
+                }}
                 disabled={currentMediaIndex === 0}
                 className="absolute left-2 top-1/2 -translate-y-1/2 bg-black/50 hover:bg-black/70 text-white p-2 rounded-full disabled:opacity-30 disabled:cursor-not-allowed transition-all"
               >
@@ -614,27 +624,31 @@ function PostCard({ post, userId, onLike }) {
               </button>
               
               <button
-                onClick={nextMedia}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  nextMedia();
+                }}
                 disabled={currentMediaIndex === post.media.length - 1}
                 className="absolute right-2 top-1/2 -translate-y-1/2 bg-black/50 hover:bg-black/70 text-white p-2 rounded-full disabled:opacity-30 disabled:cursor-not-allowed transition-all"
               >
                 <ChevronRight className="w-6 h-6" />
               </button>
 
-              {/* Media Counter */}
               <div className="absolute bottom-2 right-2 bg-black/70 text-white px-3 py-1 rounded-full text-xs">
                 {currentMediaIndex + 1} / {post.media.length}
               </div>
             </>
           )}
 
-          {/* Dots Indicator */}
           {post.media.length > 1 && (
             <div className="absolute bottom-2 left-1/2 -translate-x-1/2 flex gap-1.5">
               {post.media.map((_, index) => (
                 <button
                   key={index}
-                  onClick={() => setCurrentMediaIndex(index)}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setCurrentMediaIndex(index);
+                  }}
                   className={`w-2 h-2 rounded-full transition-all ${
                     index === currentMediaIndex 
                       ? 'bg-white w-6' 
@@ -659,7 +673,10 @@ function PostCard({ post, userId, onLike }) {
           <span>{post.likes.length} {post.likes.length === 1 ? 'Like' : 'Likes'}</span>
         </button>
 
-        <button className="flex items-center gap-2 text-sm hover:text-blue-500 transition-colors">
+        <button 
+          onClick={() => onReadMore(post._id)}
+          className="flex items-center gap-2 text-sm hover:text-blue-500 transition-colors"
+        >
           <MessageCircle className="w-5 h-5" />
           <span>{post.comments.length} {post.comments.length === 1 ? 'Comment' : 'Comments'}</span>
         </button>
