@@ -153,7 +153,7 @@ const getUserGroups = async () => {
         <div className="flex flex-col sm:flex-row justify-between items-center gap-4">
           <div>
             <h1 className="text-3xl font-bold">Founder Groups 👥</h1>
-            <h1 className="text-3xl font-bold">User id: {userId}</h1>
+            {/* <h1 className="text-3xl font-bold">User id: {userId}</h1> */}
             <p className="text-muted-foreground">
               Discover, join, and create communities around your startup interests.
             </p>
