@@ -252,8 +252,8 @@ const getUserGroups = async () => {
       <CardTitle className="flex items-center gap-2 text-lg font-semibold">
         <span className="text-2xl">{group.icon || "🌐"}</span>
         {group.name}
-        {group.createdBy?._id}
       </CardTitle>
+        {/* {group.createdBy?._id} */}
     </CardHeader>
     <CardContent className="space-y-2">
       <p className="text-sm text-muted-foreground">{group.description}</p>
