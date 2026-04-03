@@ -14,7 +14,15 @@ import toast from "react-hot-toast"
 
 export default function page() {
   const router = useRouter();
-  const {SetUsername, SetIsLoggedIn, SetUserId} = useUserStore();
+  const {
+    SetUsername,
+    SetIsLoggedIn,
+    SetUserId,
+    SetFullName,
+    SetEmail,
+    SetUserType,
+    SetIsProfileComplete,
+  } = useUserStore()
   const [step, setStep] = React.useState(1)
   const [formData, setFormData] = React.useState({
     username: "",
@@ -51,14 +59,22 @@ export default function page() {
     });
     const res = await req.json();
     console.log(res);
-    if(res.type =="success") {
-      toast.success("Logged in Successfully");
-      console.log(res.user);
-      SetUsername(res.user.username);
+    if (res.type === "success") {
+      toast.success("Logged in Successfully")
+      SetUsername(res.user.username)
       SetIsLoggedIn(true)
       SetUserId(res.user.userId)
-      localStorage.setItem("token", res.token);
-      localStorage.setItem("userId", res.user.userId);
+      SetFullName(res.user.fullName || "")
+      SetEmail(res.user.email || "")
+      SetUserType(res.user.userType || "")
+      SetIsProfileComplete(Boolean(res.user.isProfileComplete))
+      localStorage.setItem("token", res.token)
+      localStorage.setItem("userId", res.user.userId)
+      localStorage.setItem("userType", res.user.userType || "")
+      localStorage.setItem(
+        "isProfileComplete",
+        String(Boolean(res.user.isProfileComplete))
+      )
       router.push("/dashboard")
     }
     else {

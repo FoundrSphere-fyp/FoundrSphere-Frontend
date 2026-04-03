@@ -56,6 +56,7 @@ const menuItems = [
   },
   { title: "Founders", href: "/founders" },
   { title: "Investors", href: "/investors" },
+  { title: "Chatbot", href: "/chatbot" },
   { title: "About", href: "/about" },
 ]
 
@@ -172,10 +173,13 @@ export function Navbar() {
               </DropdownMenuTrigger>
               <DropdownMenuContent className="w-56" align="end">
                 <DropdownMenuLabel>Welcome, {username}</DropdownMenuLabel>
-                <DropdownMenuLabel>{userId}</DropdownMenuLabel>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem>Profile</DropdownMenuItem>
-                <DropdownMenuItem>Settings</DropdownMenuItem>
+                <DropdownMenuItem asChild>
+                  <Link href="/profile">My profile</Link>
+                </DropdownMenuItem>
+                <DropdownMenuItem asChild>
+                  <Link href="/account-settings">Account settings</Link>
+                </DropdownMenuItem>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem onClick={logout}>Log out</DropdownMenuItem>
               </DropdownMenuContent>
@@ -230,7 +234,16 @@ export function Navbar() {
                     )}
                   </div>
                 ))}
-                {!isLoggedIn && (
+                {isLoggedIn ? (
+                  <div className="flex flex-col gap-2 sm:flex-row">
+                    <Button variant="outline" asChild className="w-full">
+                      <Link href="/profile">My profile</Link>
+                    </Button>
+                    <Button variant="outline" asChild className="w-full">
+                      <Link href="/account-settings">Account settings</Link>
+                    </Button>
+                  </div>
+                ) : (
                   <>
                     <Button variant="ghost" asChild className="w-full">
                       <Link href="/login">Login</Link>

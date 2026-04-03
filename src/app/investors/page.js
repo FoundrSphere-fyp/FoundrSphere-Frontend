@@ -7,7 +7,6 @@ import { Badge } from "@/components/ui/badge"
 import {
   MessageCircle,
   Mail,
-  MapPin,
   Briefcase,
   Users,
   Loader2,
@@ -18,8 +17,8 @@ import toast from "react-hot-toast"
 import RecommendationsPanel from "@/components/RecommendationsPanel"
 import BrowseRecommendedToggle from "@/components/BrowseRecommendedToggle"
 
-export default function FoundersPage() {
-  const [founders, setFounders] = useState([])
+export default function InvestorsPage() {
+  const [investors, setInvestors] = useState([])
   const [loading, setLoading] = useState(true)
   const [loadingConversation, setLoadingConversation] = useState(null)
   const [userType, setUserType] = useState("")
@@ -28,21 +27,21 @@ export default function FoundersPage() {
   const currentUserId =
     typeof window !== "undefined" ? localStorage.getItem("userId") : null
 
-  const showRecSwitch = userType === "investor"
+  const showRecSwitch = userType === "founder"
 
   useEffect(() => {
     setUserType(localStorage.getItem("userType") || "")
   }, [])
 
   useEffect(() => {
-    fetchFounders()
+    fetchInvestors()
   }, [])
 
-  const fetchFounders = async () => {
+  const fetchInvestors = async () => {
     try {
       setLoading(true)
       const res = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/founders/get-founders`,
+        `${process.env.NEXT_PUBLIC_API_URL}/founders/get-investors`,
         {
           headers: {
             Authorization: `Bearer ${localStorage.getItem("token")}`,
@@ -52,24 +51,23 @@ export default function FoundersPage() {
       const data = await res.json()
 
       if (data.type === "success") {
-        const filteredFounders = data.founders.filter(
-          (founder) => founder._id !== currentUserId
-        )
-        setFounders(filteredFounders)
+        const list = data.investors || []
+        const filtered = list.filter((inv) => inv._id !== currentUserId)
+        setInvestors(filtered)
       } else {
-        toast.error(data.message || "Failed to load founders")
+        toast.error(data.message || "Failed to load investors")
       }
     } catch (error) {
-      console.error("Failed to fetch founders:", error)
-      toast.error("Failed to load founders")
+      console.error("Failed to fetch investors:", error)
+      toast.error("Failed to load investors")
     } finally {
       setLoading(false)
     }
   }
 
-  const startConversation = async (founderId) => {
+  const startConversation = async (investorId) => {
     try {
-      setLoadingConversation(founderId)
+      setLoadingConversation(investorId)
       const res = await fetch(
         `${process.env.NEXT_PUBLIC_API_URL}/messages/get-or-create`,
         {
@@ -78,7 +76,7 @@ export default function FoundersPage() {
             "Content-Type": "application/json",
             Authorization: `Bearer ${localStorage.getItem("token")}`,
           },
-          body: JSON.stringify({ receiverId: founderId }),
+          body: JSON.stringify({ receiverId: investorId }),
         }
       )
 
@@ -103,7 +101,7 @@ export default function FoundersPage() {
           <div className="flex h-[60vh] items-center justify-center">
             <div className="text-center">
               <Loader2 className="mx-auto mb-4 h-12 w-12 animate-spin text-primary" />
-              <p className="text-muted-foreground">Loading founders...</p>
+              <p className="text-muted-foreground">Loading investors...</p>
             </div>
           </div>
         </div>
@@ -116,94 +114,86 @@ export default function FoundersPage() {
       <div className="mx-auto max-w-7xl space-y-8">
         <div className="space-y-4 text-center">
           <h1 className="text-4xl font-bold tracking-tight">
-            Discover Founders 🚀
+            Discover Investors 💰
           </h1>
           <p className="mx-auto max-w-2xl text-lg text-muted-foreground">
-            Connect with fellow entrepreneurs, share ideas, and build the future
-            together.
+            Connect with angels, VCs, and funds aligned with your startup.
           </p>
           <div className="flex flex-col items-center justify-center gap-4">
             <div className="flex items-center gap-2 text-sm text-muted-foreground">
               <Users className="h-4 w-4" />
-              <span>{founders.length} founders in the community</span>
+              <span>{investors.length} investors in the community</span>
             </div>
             {showRecSwitch && (
               <BrowseRecommendedToggle
                 value={view}
                 onChange={setView}
-                allLabel="All founders"
-                recLabel="Suggested startups"
+                allLabel="All investors"
+                recLabel="Recommended for you"
               />
             )}
           </div>
         </div>
 
         {showRecSwitch && view === "recommended" ? (
-          <RecommendationsPanel mode="founders" active />
-        ) : founders.length === 0 ? (
+          <RecommendationsPanel mode="investors" active />
+        ) : investors.length === 0 ? (
           <Card className="p-12 text-center">
             <div className="space-y-4">
               <Users className="mx-auto h-16 w-16 text-muted-foreground" />
               <div>
-                <h3 className="mb-2 text-lg font-semibold">No founders yet</h3>
+                <h3 className="mb-2 text-lg font-semibold">No investors yet</h3>
                 <p className="text-muted-foreground">
-                  Be the first to join the community!
+                  Check back soon for new investors.
                 </p>
               </div>
             </div>
           </Card>
         ) : (
           <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
-            {founders.map((founder) => (
+            {investors.map((investor) => (
               <Card
-                key={founder._id}
+                key={investor._id}
                 className="transition-all duration-300 hover:-translate-y-1 hover:shadow-lg"
               >
                 <CardHeader className="space-y-4">
                   <div className="flex items-start gap-4">
-                    <div className="flex h-16 w-16 items-center justify-center rounded-full bg-gradient-to-br from-blue-500 to-purple-600 text-2xl font-bold text-white">
-                      {founder.fullName?.charAt(0).toUpperCase() || "?"}
+                    <div className="flex h-16 w-16 items-center justify-center rounded-full bg-gradient-to-br from-emerald-500 to-teal-600 text-2xl font-bold text-white">
+                      {investor.fullName?.charAt(0).toUpperCase() || "?"}
                     </div>
                     <div className="flex-1">
                       <CardTitle className="mb-1 text-xl">
-                        {founder.fullName || "Unknown"}
+                        {investor.fullName || "Unknown"}
                       </CardTitle>
                       <p className="text-sm text-muted-foreground">
-                        @{founder.username}
+                        @{investor.username}
                       </p>
                     </div>
                   </div>
 
                   <Badge variant="secondary" className="w-fit">
                     <Briefcase className="mr-1 h-3 w-3" />
-                    Founder
+                    Investor
                   </Badge>
                 </CardHeader>
 
                 <CardContent className="space-y-4">
-                  {founder.email && (
+                  {investor.email && (
                     <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                      <Mail className="h-4 w-4" />
-                      <span className="truncate">{founder.email}</span>
+                      <Mail className="h-4 w-4 shrink-0" />
+                      <span className="truncate">{investor.email}</span>
                     </div>
                   )}
 
-                  {founder.location && (
-                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                      <MapPin className="h-4 w-4" />
-                      <span>{founder.location}</span>
-                    </div>
-                  )}
-
-                  {founder.bio && (
+                  {investor.bio && (
                     <p className="line-clamp-3 text-sm text-muted-foreground">
-                      {founder.bio}
+                      {investor.bio}
                     </p>
                   )}
 
                   <div className="border-t pt-2 text-xs text-muted-foreground">
                     Joined{" "}
-                    {new Date(founder.createdAt).toLocaleDateString("en-US", {
+                    {new Date(investor.createdAt).toLocaleDateString("en-US", {
                       month: "short",
                       year: "numeric",
                     })}
@@ -211,14 +201,16 @@ export default function FoundersPage() {
 
                   <div className="flex flex-col gap-2 sm:flex-row">
                     <Button variant="outline" className="flex-1" asChild>
-                      <Link href={`/founders/${founder._id}`}>View profile</Link>
+                      <Link href={`/investors/${investor._id}`}>
+                        View profile
+                      </Link>
                     </Button>
                     <Button
                       className="flex-1"
-                      onClick={() => startConversation(founder._id)}
-                      disabled={loadingConversation === founder._id}
+                      onClick={() => startConversation(investor._id)}
+                      disabled={loadingConversation === investor._id}
                     >
-                      {loadingConversation === founder._id ? (
+                      {loadingConversation === investor._id ? (
                         <>
                           <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                           Starting chat...

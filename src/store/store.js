@@ -6,9 +6,13 @@ export const useUserStore = create((set) => ({
   userId: "",
   email: "",
   fullName: "",
-  SetFullName: (newState) => set({ fullName:newState}),
-  SetIsLoggedIn: (newState) => set({ isLoggedIn:newState}),
-  SetUsername: (newState) => set({ username:newState}),
-  SetUserId: (newState) => set({ userId:newState}),
-  SetEmail: (newState) => set({ email:newState})
+  userType: "",
+  isProfileComplete: false,
+  SetFullName: (newState) => set({ fullName: newState }),
+  SetIsLoggedIn: (newState) => set({ isLoggedIn: newState }),
+  SetUsername: (newState) => set({ username: newState }),
+  SetUserId: (newState) => set({ userId: newState }),
+  SetEmail: (newState) => set({ email: newState }),
+  SetUserType: (newState) => set({ userType: newState }),
+  SetIsProfileComplete: (newState) => set({ isProfileComplete: newState }),
 }))
