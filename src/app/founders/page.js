@@ -18,6 +18,7 @@ import toast from "react-hot-toast"
 import RecommendationsPanel from "@/components/RecommendationsPanel"
 import BrowseRecommendedToggle from "@/components/BrowseRecommendedToggle"
 
+
 export default function FoundersPage() {
   const [founders, setFounders] = useState([])
   const [loading, setLoading] = useState(true)
