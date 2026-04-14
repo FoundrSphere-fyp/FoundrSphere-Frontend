@@ -9,6 +9,7 @@ import { Loader2, MessageCircle, Sparkles } from "lucide-react"
 import {
   fetchRecommendInvestors,
   fetchRecommendFounders,
+  fetchRecommendCofounders,
   formatFitHints,
   STRONG_MATCH_MIN,
 } from "@/lib/recommendations"
@@ -17,7 +18,7 @@ import { useRouter } from "next/navigation"
 
 /**
  * Full-page recommendations list (no modal). Fetches when `active` becomes true.
- * @param {'investors'|'founders'} mode
+ * @param {'investors'|'founders'|'cofounders'} mode
  * @param {boolean} active - when false, renders nothing
  */
 export default function RecommendationsPanel({ mode, active }) {
@@ -38,7 +39,9 @@ export default function RecommendationsPanel({ mode, active }) {
         const data =
           mode === "investors"
             ? await fetchRecommendInvestors()
-            : await fetchRecommendFounders()
+            : mode === "cofounders"
+              ? await fetchRecommendCofounders()
+              : await fetchRecommendFounders()
         if (cancelled) return
         if (data.type === "success") {
           setItems(data.recommendations || [])
@@ -90,12 +93,16 @@ export default function RecommendationsPanel({ mode, active }) {
   const title =
     mode === "investors"
       ? "Recommended investors"
-      : "Recommended founders & startups"
+      : mode === "cofounders"
+        ? "Recommended co-founders"
+        : "Recommended founders & startups"
 
   const subtitle =
     mode === "investors"
       ? "Ranked for your founder profile (semantic fit + industry, stage, check size, location)."
-      : "Ranked for your investor profile (semantic fit + preferences)."
+      : mode === "cofounders"
+        ? "Ranked for your founder profile (semantic fit + industry, stage, location, business model)."
+        : "Ranked for your investor profile (semantic fit + preferences)."
 
   if (loading) {
     return (

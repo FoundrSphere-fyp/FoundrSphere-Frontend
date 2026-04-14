@@ -19,6 +19,8 @@ import {
   FUNDING_STAGE_OPTIONS,
   BUSINESS_MODEL_OPTIONS,
   INVESTOR_TYPE_OPTIONS,
+  COFOUNDER_ROLE_OPTIONS,
+  COMMITMENT_OPTIONS,
 } from "@/constants/select-options"
 
 function ChipToggle({ active, children, onClick }) {
@@ -55,10 +57,15 @@ export default function OnboardingModal({ open, userType, onComplete }) {
   const [founderIndustries, setFounderIndustries] = React.useState([])
   const [founderStage, setFounderStage] = React.useState("")
   const [businessModel, setBusinessModel] = React.useState("")
+  const [founderRole, setFounderRole] = React.useState("")
+  const [commitmentLevel, setCommitmentLevel] = React.useState("")
+  const [desiredCofounderRoles, setDesiredCofounderRoles] = React.useState([])
+  const [desiredCommitmentLevel, setDesiredCommitmentLevel] = React.useState("")
   const [fundingNeeded, setFundingNeeded] = React.useState("")
   const [location, setLocation] = React.useState("")
   const [tractionUsers, setTractionUsers] = React.useState("")
   const [tractionRevenue, setTractionRevenue] = React.useState("")
+  const [cofounderPreferenceText, setCofounderPreferenceText] = React.useState("")
 
   // Investor
   const [firmName, setFirmName] = React.useState("")
@@ -102,6 +109,11 @@ export default function OnboardingModal({ open, userType, onComplete }) {
             fundingNeeded,
             location,
             businessModel,
+            founderRole,
+            commitmentLevel,
+            desiredCofounderRoles,
+            desiredCommitmentLevel,
+            cofounderPreferenceText,
             tractionUsers,
             tractionRevenue,
           }
@@ -174,108 +186,201 @@ export default function OnboardingModal({ open, userType, onComplete }) {
 
         {userType === "founder" && (
           <div className="space-y-4 pt-2">
-            <div className="space-y-2">
-              <Label htmlFor="startupName">Startup name *</Label>
-              <Input
-                id="startupName"
-                value={startupName}
-                onChange={(e) => setStartupName(e.target.value)}
-                placeholder="Your company name"
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="description">Description *</Label>
-              <Textarea
-                id="description"
-                value={description}
-                onChange={(e) => setDescription(e.target.value)}
-                placeholder="What does your startup do?"
-                rows={4}
-              />
-            </div>
-            <div className="space-y-2">
-              <Label>Industries</Label>
-              <div className="flex flex-wrap gap-2">
-                {INDUSTRY_OPTIONS.map((opt) => (
-                  <ChipToggle
-                    key={opt}
-                    active={founderIndustries.includes(opt)}
-                    onClick={() => toggleInList(opt, founderIndustries, setFounderIndustries)}
-                  >
-                    {opt}
-                  </ChipToggle>
-                ))}
+            <div className="rounded-xl border border-border bg-muted/20 p-4 space-y-4">
+              <div>
+                <p className="text-sm font-semibold">Your Founder Profile</p>
+                <p className="text-xs text-muted-foreground">
+                  These describe what you are building and what you bring.
+                </p>
               </div>
-            </div>
-            <div className="space-y-2">
-              <Label>Stage</Label>
-              <div className="flex flex-wrap gap-2">
-                {FUNDING_STAGE_OPTIONS.map((opt) => (
-                  <ChipToggle
-                    key={opt}
-                    active={founderStage === opt}
-                    onClick={() => setFounderStage(founderStage === opt ? "" : opt)}
-                  >
-                    {opt}
-                  </ChipToggle>
-                ))}
-              </div>
-            </div>
-            <div className="space-y-2">
-              <Label>Business model</Label>
-              <div className="flex flex-wrap gap-2">
-                {BUSINESS_MODEL_OPTIONS.map((opt) => (
-                  <ChipToggle
-                    key={opt}
-                    active={businessModel === opt}
-                    onClick={() => setBusinessModel(businessModel === opt ? "" : opt)}
-                  >
-                    {opt}
-                  </ChipToggle>
-                ))}
-              </div>
-            </div>
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+
               <div className="space-y-2">
-                <Label htmlFor="fundingNeeded">Funding needed (amount)</Label>
+                <Label htmlFor="startupName">Startup name *</Label>
                 <Input
-                  id="fundingNeeded"
-                  type="number"
-                  min={0}
-                  value={fundingNeeded}
-                  onChange={(e) => setFundingNeeded(e.target.value)}
-                  placeholder="e.g. 500000"
+                  id="startupName"
+                  value={startupName}
+                  onChange={(e) => setStartupName(e.target.value)}
+                  placeholder="Your company name"
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="location">Location</Label>
-                <Input
-                  id="location"
-                  value={location}
-                  onChange={(e) => setLocation(e.target.value)}
-                  placeholder="City, country"
+                <Label htmlFor="description">Description *</Label>
+                <Textarea
+                  id="description"
+                  value={description}
+                  onChange={(e) => setDescription(e.target.value)}
+                  placeholder="What does your startup do?"
+                  rows={4}
                 />
+              </div>
+              <div className="space-y-2">
+                <Label>Industries</Label>
+                <div className="flex flex-wrap gap-2">
+                  {INDUSTRY_OPTIONS.map((opt) => (
+                    <ChipToggle
+                      key={opt}
+                      active={founderIndustries.includes(opt)}
+                      onClick={() => toggleInList(opt, founderIndustries, setFounderIndustries)}
+                    >
+                      {opt}
+                    </ChipToggle>
+                  ))}
+                </div>
+              </div>
+              <div className="space-y-2">
+                <Label>Stage</Label>
+                <div className="flex flex-wrap gap-2">
+                  {FUNDING_STAGE_OPTIONS.map((opt) => (
+                    <ChipToggle
+                      key={opt}
+                      active={founderStage === opt}
+                      onClick={() => setFounderStage(founderStage === opt ? "" : opt)}
+                    >
+                      {opt}
+                    </ChipToggle>
+                  ))}
+                </div>
+              </div>
+              <div className="space-y-2">
+                <Label>Business model</Label>
+                <div className="flex flex-wrap gap-2">
+                  {BUSINESS_MODEL_OPTIONS.map((opt) => (
+                    <ChipToggle
+                      key={opt}
+                      active={businessModel === opt}
+                      onClick={() => setBusinessModel(businessModel === opt ? "" : opt)}
+                    >
+                      {opt}
+                    </ChipToggle>
+                  ))}
+                </div>
+              </div>
+              <div className="space-y-2">
+                <Label>Your role in startup</Label>
+                <div className="flex flex-wrap gap-2">
+                  {COFOUNDER_ROLE_OPTIONS.map((opt) => (
+                    <ChipToggle
+                      key={opt}
+                      active={founderRole === opt}
+                      onClick={() => setFounderRole(founderRole === opt ? "" : opt)}
+                    >
+                      {opt}
+                    </ChipToggle>
+                  ))}
+                </div>
+              </div>
+              <div className="space-y-2">
+                <Label>Your commitment</Label>
+                <div className="flex flex-wrap gap-2">
+                  {COMMITMENT_OPTIONS.map((opt) => (
+                    <ChipToggle
+                      key={opt}
+                      active={commitmentLevel === opt}
+                      onClick={() => setCommitmentLevel(commitmentLevel === opt ? "" : opt)}
+                    >
+                      {opt}
+                    </ChipToggle>
+                  ))}
+                </div>
+              </div>
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                <div className="space-y-2">
+                  <Label htmlFor="fundingNeeded">Funding needed (amount)</Label>
+                  <Input
+                    id="fundingNeeded"
+                    type="number"
+                    min={0}
+                    value={fundingNeeded}
+                    onChange={(e) => setFundingNeeded(e.target.value)}
+                    placeholder="e.g. 500000"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="location">Location</Label>
+                  <Input
+                    id="location"
+                    value={location}
+                    onChange={(e) => setLocation(e.target.value)}
+                    placeholder="City, country"
+                  />
+                </div>
+              </div>
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                <div className="space-y-2">
+                  <Label htmlFor="tractionUsers">Traction — users</Label>
+                  <Input
+                    id="tractionUsers"
+                    type="number"
+                    min={0}
+                    value={tractionUsers}
+                    onChange={(e) => setTractionUsers(e.target.value)}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="tractionRevenue">Traction — revenue</Label>
+                  <Input
+                    id="tractionRevenue"
+                    type="number"
+                    min={0}
+                    value={tractionRevenue}
+                    onChange={(e) => setTractionRevenue(e.target.value)}
+                  />
+                </div>
               </div>
             </div>
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+
+            <div className="rounded-xl border border-border bg-muted/20 p-4 space-y-4">
+              <div>
+                <p className="text-sm font-semibold">Co-founder You Want</p>
+                <p className="text-xs text-muted-foreground">
+                  These preferences are used to recommend matching founders.
+                </p>
+              </div>
+
               <div className="space-y-2">
-                <Label htmlFor="tractionUsers">Traction — users</Label>
-                <Input
-                  id="tractionUsers"
-                  type="number"
-                  min={0}
-                  value={tractionUsers}
-                  onChange={(e) => setTractionUsers(e.target.value)}
-                />
+                <Label>Desired co-founder role(s)</Label>
+                <div className="flex flex-wrap gap-2">
+                  {COFOUNDER_ROLE_OPTIONS.map((opt) => (
+                    <ChipToggle
+                      key={opt}
+                      active={desiredCofounderRoles.includes(opt)}
+                      onClick={() =>
+                        toggleInList(opt, desiredCofounderRoles, setDesiredCofounderRoles)
+                      }
+                    >
+                      {opt}
+                    </ChipToggle>
+                  ))}
+                </div>
               </div>
               <div className="space-y-2">
-                <Label htmlFor="tractionRevenue">Traction — revenue</Label>
-                <Input
-                  id="tractionRevenue"
-                  type="number"
-                  min={0}
-                  value={tractionRevenue}
-                  onChange={(e) => setTractionRevenue(e.target.value)}
+                <Label>Desired co-founder commitment</Label>
+                <div className="flex flex-wrap gap-2">
+                  {COMMITMENT_OPTIONS.map((opt) => (
+                    <ChipToggle
+                      key={opt}
+                      active={desiredCommitmentLevel === opt}
+                      onClick={() =>
+                        setDesiredCommitmentLevel(
+                          desiredCommitmentLevel === opt ? "" : opt
+                        )
+                      }
+                    >
+                      {opt}
+                    </ChipToggle>
+                  ))}
+                </div>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="cofounderPreferenceText">
+                  Additional preference details
+                </Label>
+                <Textarea
+                  id="cofounderPreferenceText"
+                  value={cofounderPreferenceText}
+                  onChange={(e) => setCofounderPreferenceText(e.target.value)}
+                  placeholder="Example: Looking for a technical co-founder with React/Node experience, B2B SaaS background, and willingness to build full-time."
+                  rows={3}
                 />
               </div>
             </div>

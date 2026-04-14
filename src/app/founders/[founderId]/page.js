@@ -202,6 +202,16 @@ export default function FounderDetailPage() {
                   </p>
                 </div>
               )}
+              {founderProfile.cofounderPreferenceText && (
+                <div>
+                  <p className="text-xs font-medium uppercase text-muted-foreground">
+                    Looking for co-founder
+                  </p>
+                  <p className="text-sm leading-relaxed">
+                    {founderProfile.cofounderPreferenceText}
+                  </p>
+                </div>
+              )}
               <div className="flex flex-wrap gap-2">
                 {founderProfile.industries?.map((i) => (
                   <Badge key={i} variant="outline">
@@ -233,6 +243,34 @@ export default function FounderDetailPage() {
                   <div className="text-sm">
                     <span className="text-muted-foreground">Model:</span>{" "}
                     {founderProfile.businessModel}
+                  </div>
+                )}
+                {founderProfile.founderRole && (
+                  <div className="text-sm">
+                    <span className="text-muted-foreground">Role:</span>{" "}
+                    {founderProfile.founderRole}
+                  </div>
+                )}
+                {founderProfile.commitmentLevel && (
+                  <div className="text-sm">
+                    <span className="text-muted-foreground">Commitment:</span>{" "}
+                    {founderProfile.commitmentLevel}
+                  </div>
+                )}
+                {founderProfile.desiredCofounderRoles?.length > 0 && (
+                  <div className="text-sm">
+                    <span className="text-muted-foreground">
+                      Desired co-founder role(s):
+                    </span>{" "}
+                    {founderProfile.desiredCofounderRoles.join(", ")}
+                  </div>
+                )}
+                {founderProfile.desiredCommitmentLevel && (
+                  <div className="text-sm">
+                    <span className="text-muted-foreground">
+                      Desired co-founder commitment:
+                    </span>{" "}
+                    {founderProfile.desiredCommitmentLevel}
                   </div>
                 )}
               </div>

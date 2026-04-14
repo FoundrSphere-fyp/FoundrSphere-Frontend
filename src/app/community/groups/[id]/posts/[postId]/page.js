@@ -12,7 +12,10 @@ import {
   ChevronLeft, 
   ChevronRight,
   Send,
-  Loader2
+  Loader2,
+  Calendar,
+  MapPin,
+  Link2,
 } from "lucide-react";
 import { useUserStore } from "@/store/store";
 import toast from "react-hot-toast";
@@ -78,7 +81,7 @@ export default function PostDetailPage() {
           ...post,
           likes: data.isLiked 
             ? [...post.likes, userId] 
-            : post.likes.filter(id => id !== userId)
+            : post.likes.filter((id) => String(id) !== String(userId))
         });
       }
     } catch (error) {
@@ -171,7 +174,9 @@ export default function PostDetailPage() {
     );
   }
 
-  const isLiked = post.likes.includes(userId);
+  const isLiked = Array.isArray(post.likes) && post.likes.some(
+    (id) => String(id) === String(userId)
+  );
 
   return (
     <div className="max-w-4xl mx-auto p-8">
@@ -220,6 +225,59 @@ export default function PostDetailPage() {
             </div>
           </div>
         </div>
+
+        {post.eventId && typeof post.eventId === "object" && (
+          <div className="p-6 border-b bg-primary/5">
+            <div className="flex items-start gap-3">
+              <Calendar className="w-5 h-5 text-primary shrink-0 mt-0.5" />
+              <div className="space-y-2">
+                <p className="text-xs font-semibold uppercase tracking-wide text-primary">Event</p>
+                <h4 className="text-lg font-semibold">{post.eventId.title}</h4>
+                {post.eventId.description && (
+                  <p className="text-sm text-muted-foreground whitespace-pre-wrap">{post.eventId.description}</p>
+                )}
+                <p className="text-sm text-muted-foreground">
+                  {new Date(post.eventId.startAt).toLocaleString(undefined, {
+                    dateStyle: "full",
+                    timeStyle: "short",
+                  })}
+                  {post.eventId.endAt &&
+                    ` – ends ${new Date(post.eventId.endAt).toLocaleString(undefined, {
+                      dateStyle: "medium",
+                      timeStyle: "short",
+                    })}`}
+                </p>
+                {post.eventId.hosts?.length > 0 && (
+                  <p className="text-sm">
+                    <span className="text-muted-foreground">Hosts:</span>{" "}
+                    {post.eventId.hosts.join(", ")}
+                  </p>
+                )}
+                {post.eventId.isOnline ? (
+                  <span className="inline-block text-xs uppercase bg-primary/15 text-primary px-2 py-1 rounded">
+                    Online
+                  </span>
+                ) : post.eventId.location ? (
+                  <p className="text-sm flex items-center gap-1.5">
+                    <MapPin className="w-4 h-4 shrink-0" />
+                    {post.eventId.location}
+                  </p>
+                ) : null}
+                {post.eventId.meetUrl && (
+                  <a
+                    href={post.eventId.meetUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-2 text-sm font-medium text-primary hover:underline"
+                  >
+                    <Link2 className="w-4 h-4" />
+                    Join video room (FoundrSphere)
+                  </a>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Post Content */}
         {post.content && (

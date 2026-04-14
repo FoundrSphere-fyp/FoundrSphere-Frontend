@@ -45,3 +45,19 @@ export const INVESTOR_TYPE_OPTIONS = [
   "Corporate VC",
   "Accelerator",
 ]
+
+export const COFOUNDER_ROLE_OPTIONS = [
+  "Technical / Engineering",
+  "Product",
+  "Design",
+  "Growth / Marketing",
+  "Sales / GTM",
+  "Operations",
+  "Finance",
+]
+
+export const COMMITMENT_OPTIONS = [
+  "Full-time",
+  "Part-time",
+  "Flexible",
+]

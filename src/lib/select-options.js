@@ -45,3 +45,19 @@ export const BUSINESS_MODELS = [
   "Transaction / Commission",
   "Licensing",
 ]
+
+export const COFOUNDER_ROLES = [
+  "Technical / Engineering",
+  "Product",
+  "Design",
+  "Growth / Marketing",
+  "Sales / GTM",
+  "Operations",
+  "Finance",
+]
+
+export const COMMITMENT_LEVELS = [
+  "Full-time",
+  "Part-time",
+  "Flexible",
+]

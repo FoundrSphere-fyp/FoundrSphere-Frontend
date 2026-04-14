@@ -1,11 +1,11 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
-import { Router, Users, Upload, X, Loader2, Image as ImageIcon, Video, Heart, MessageCircle, ChevronLeft, ChevronRight } from "lucide-react";
+import { Users, Upload, X, Loader2, Video, Heart, MessageCircle, ChevronLeft, ChevronRight, Calendar, MapPin, Link2, Monitor } from "lucide-react";
 import { useUserStore } from "@/store/store";
 import toast from "react-hot-toast";
 
@@ -27,7 +27,37 @@ export default function GroupPage() {
   const [posting, setPosting] = useState(false);
   const [uploadedAssets, setUploadedAssets] = useState([]);
 
+  const [groupEvents, setGroupEvents] = useState([]);
+  const [createEvent, setCreateEvent] = useState(false);
+  const [eventTitle, setEventTitle] = useState("");
+  const [eventDescription, setEventDescription] = useState("");
+  const [eventHosts, setEventHosts] = useState("");
+  const [eventStart, setEventStart] = useState("");
+  const [eventEnd, setEventEnd] = useState("");
+  const [eventIsOnline, setEventIsOnline] = useState(false);
+  const [eventCreateMeet, setEventCreateMeet] = useState(false);
+  const [eventLocation, setEventLocation] = useState("");
+
   const router = useRouter();
+
+  const fetchGroupEvents = useCallback(() => {
+    if (!id) return;
+    fetch(`${process.env.NEXT_PUBLIC_API_URL}/groups/get-group-events`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${localStorage.getItem("token")}`,
+      },
+      body: JSON.stringify({ groupId: id }),
+    })
+      .then((res) => res.json())
+      .then((data) => {
+        if (data.type === "success" && data.events) {
+          setGroupEvents(data.events);
+        }
+      })
+      .catch(() => {});
+  }, [id]);
 
   const handleLeaveGroup = async (memberId) => {
     if (!confirm("Are you sure you want to leave this group?")) return;
@@ -114,7 +144,9 @@ export default function GroupPage() {
     })
       .then(res => res.json())
       .then(data => setMembers(data.members || []));
-  }, [id]);
+
+    fetchGroupEvents();
+  }, [id, fetchGroupEvents]);
 
   const handleFileSelect = (e) => {
     const files = Array.from(e.target.files);
@@ -185,8 +217,35 @@ export default function GroupPage() {
   };
 
   const handlePostSubmit = async () => {
-    if (!content.trim() && selectedFiles.length === 0) {
-      toast.error("Please add some content or upload media");
+    let eventPayload = null;
+    if (createEvent) {
+      if (!eventTitle.trim() || !eventStart) {
+        toast.error("Event title and start date/time are required.");
+        return;
+      }
+      if (!eventIsOnline && !eventLocation.trim()) {
+        toast.error("Add a location for in-person events, or switch to online.");
+        return;
+      }
+      eventPayload = {
+        title: eventTitle.trim(),
+        description: eventDescription.trim(),
+        hosts: eventHosts,
+        startAt: new Date(eventStart).toISOString(),
+        endAt: eventEnd ? new Date(eventEnd).toISOString() : undefined,
+        isOnline: eventIsOnline,
+        createMeet: Boolean(eventIsOnline && eventCreateMeet),
+        location: eventIsOnline ? "" : eventLocation.trim(),
+      };
+    }
+
+    const hasBody =
+      content.trim() ||
+      selectedFiles.length > 0 ||
+      (eventPayload && eventPayload.title);
+
+    if (!hasBody) {
+      toast.error("Add post text, media, or schedule an event.");
       return;
     }
 
@@ -202,11 +261,12 @@ export default function GroupPage() {
         content: content.trim(),
         userId,
         groupId: id,
-        media: mediaAssets.map(asset => ({
+        media: mediaAssets.map((asset) => ({
           url: asset.url,
           type: asset.resourceType,
-          publicId: asset.publicId
-        }))
+          publicId: asset.publicId,
+        })),
+        ...(eventPayload ? { event: eventPayload } : {}),
       };
 
       const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/posts/create-group-post`, {
@@ -226,6 +286,16 @@ export default function GroupPage() {
         setSelectedFiles([]);
         setPreviews([]);
         setUploadedAssets([]);
+        setCreateEvent(false);
+        setEventTitle("");
+        setEventDescription("");
+        setEventHosts("");
+        setEventStart("");
+        setEventEnd("");
+        setEventIsOnline(false);
+        setEventCreateMeet(false);
+        setEventLocation("");
+        fetchGroupEvents();
         toast.success("Post created successfully!");
       } else {
         toast.error(data.message || "Failed to create post");
@@ -352,6 +422,121 @@ export default function GroupPage() {
             disabled={posting || uploading}
           />
 
+          <div className="mt-4 rounded-lg border border-dashed border-muted-foreground/30 bg-muted/20 p-4 space-y-3">
+            <label className="flex items-center gap-2 text-sm font-medium cursor-pointer">
+              <input
+                type="checkbox"
+                checked={createEvent}
+                onChange={(e) => {
+                  setCreateEvent(e.target.checked);
+                  if (!e.target.checked) {
+                    setEventCreateMeet(false);
+                  }
+                }}
+                disabled={posting || uploading}
+                className="rounded border-input"
+              />
+              <Calendar className="w-4 h-4" />
+              Schedule an event with this post
+            </label>
+
+            {createEvent && (
+              <div className="grid gap-3 sm:grid-cols-2 pt-2 border-t border-border/60">
+                <div className="sm:col-span-2 space-y-1">
+                  <label className="text-xs font-medium text-muted-foreground">Event title *</label>
+                  <input
+                    className="w-full border rounded-md px-3 py-2 text-sm bg-background"
+                    value={eventTitle}
+                    onChange={(e) => setEventTitle(e.target.value)}
+                    placeholder="Workshop, AMA, demo day…"
+                    disabled={posting || uploading}
+                  />
+                </div>
+                <div className="sm:col-span-2 space-y-1">
+                  <label className="text-xs font-medium text-muted-foreground">Description</label>
+                  <textarea
+                    className="w-full border rounded-md p-2 text-sm bg-background min-h-[72px]"
+                    value={eventDescription}
+                    onChange={(e) => setEventDescription(e.target.value)}
+                    placeholder="What should members expect?"
+                    disabled={posting || uploading}
+                  />
+                </div>
+                <div className="sm:col-span-2 space-y-1">
+                  <label className="text-xs font-medium text-muted-foreground">Hosts (comma-separated)</label>
+                  <input
+                    className="w-full border rounded-md px-3 py-2 text-sm bg-background"
+                    value={eventHosts}
+                    onChange={(e) => setEventHosts(e.target.value)}
+                    placeholder="Jane Doe, John Smith"
+                    disabled={posting || uploading}
+                  />
+                </div>
+                <div className="space-y-1">
+                  <label className="text-xs font-medium text-muted-foreground">Starts *</label>
+                  <input
+                    type="datetime-local"
+                    className="w-full border rounded-md px-3 py-2 text-sm bg-background"
+                    value={eventStart}
+                    onChange={(e) => setEventStart(e.target.value)}
+                    disabled={posting || uploading}
+                  />
+                </div>
+                <div className="space-y-1">
+                  <label className="text-xs font-medium text-muted-foreground">Ends (optional)</label>
+                  <input
+                    type="datetime-local"
+                    className="w-full border rounded-md px-3 py-2 text-sm bg-background"
+                    value={eventEnd}
+                    onChange={(e) => setEventEnd(e.target.value)}
+                    disabled={posting || uploading}
+                  />
+                </div>
+                <label className="flex items-center gap-2 text-sm sm:col-span-2">
+                  <input
+                    type="checkbox"
+                    checked={eventIsOnline}
+                    onChange={(e) => {
+                      setEventIsOnline(e.target.checked);
+                      if (!e.target.checked) setEventCreateMeet(false);
+                    }}
+                    disabled={posting || uploading}
+                    className="rounded border-input"
+                  />
+                  <Monitor className="w-4 h-4 shrink-0" />
+                  Online event
+                </label>
+                {eventIsOnline && (
+                  <label className="flex items-center gap-2 text-sm sm:col-span-2">
+                    <input
+                      type="checkbox"
+                      checked={eventCreateMeet}
+                      onChange={(e) => setEventCreateMeet(e.target.checked)}
+                      disabled={posting || uploading}
+                      className="rounded border-input"
+                    />
+                    <Link2 className="w-4 h-4 shrink-0" />
+                    Create FoundrSphere video room (meetup.foundrsphere.com)
+                  </label>
+                )}
+                {!eventIsOnline && (
+                  <div className="sm:col-span-2 space-y-1">
+                    <label className="text-xs font-medium text-muted-foreground flex items-center gap-1">
+                      <MapPin className="w-3 h-3" /> Location *
+                    </label>
+                    <input
+                      className="w-full border rounded-md px-3 py-2 text-sm bg-background"
+                      value={eventLocation}
+                      onChange={(e) => setEventLocation(e.target.value)}
+                      placeholder="Venue or address"
+                      disabled={posting || uploading}
+                    />
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+
           {previews.length > 0 && (
             <div className="mt-4 grid grid-cols-2 md:grid-cols-3 gap-4">
               {previews.map((preview, index) => (
@@ -419,7 +604,13 @@ export default function GroupPage() {
 
             <Button 
               onClick={handlePostSubmit} 
-              disabled={posting || uploading || (!content.trim() && selectedFiles.length === 0)}
+              disabled={
+                posting ||
+                uploading ||
+                (!content.trim() &&
+                  selectedFiles.length === 0 &&
+                  !(createEvent && eventTitle.trim() && eventStart && (eventIsOnline || eventLocation.trim())))
+              }
               className="flex items-center gap-2"
             >
               {posting ? (
@@ -451,6 +642,64 @@ export default function GroupPage() {
 
       {/* RIGHT SIDEBAR */}
       <aside className="col-span-1 space-y-4">
+        <Card className="shadow-md">
+          <CardHeader>
+            <CardTitle className="text-lg font-semibold flex items-center gap-2">
+              <Calendar className="w-4 h-4" /> Group events
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-3 max-h-[320px] overflow-y-auto text-sm">
+            {groupEvents.length === 0 ? (
+              <p className="text-muted-foreground text-xs">No events yet. Schedule one when you post.</p>
+            ) : (
+              groupEvents.map((ev) => (
+                <div
+                  key={ev._id}
+                  className="rounded-md border border-border/80 p-3 space-y-1.5"
+                >
+                  <p className="font-medium leading-tight">{ev.title}</p>
+                  <p className="text-xs text-muted-foreground">
+                    {new Date(ev.startAt).toLocaleString(undefined, {
+                      dateStyle: "medium",
+                      timeStyle: "short",
+                    })}
+                    {ev.endAt &&
+                      ` – ${new Date(ev.endAt).toLocaleTimeString(undefined, { timeStyle: "short" })}`}
+                  </p>
+                  {ev.hosts?.length > 0 && (
+                    <p className="text-xs text-muted-foreground">
+                      Hosts: {ev.hosts.join(", ")}
+                    </p>
+                  )}
+                  <div className="flex flex-wrap gap-1.5 pt-1">
+                    {ev.isOnline ? (
+                      <span className="text-[10px] uppercase tracking-wide bg-primary/10 text-primary px-2 py-0.5 rounded">
+                        Online
+                      </span>
+                    ) : (
+                      <span className="text-[10px] flex items-center gap-0.5 text-muted-foreground">
+                        <MapPin className="w-3 h-3" />
+                        {ev.location || "In person"}
+                      </span>
+                    )}
+                  </div>
+                  {ev.meetUrl && (
+                    <a
+                      href={ev.meetUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center gap-1 text-xs text-primary hover:underline"
+                    >
+                      <Link2 className="w-3 h-3" />
+                      Join video room
+                    </a>
+                  )}
+                </div>
+              ))
+            )}
+          </CardContent>
+        </Card>
+
         <Card className="shadow-md">
           <CardHeader>
             <CardTitle className="text-lg font-semibold flex items-center gap-2">
@@ -514,7 +763,9 @@ function PostCard({ post, userId, onLike, onReadMore }) {
     }
   };
 
-  const isLiked = post.likes.includes(userId);
+  const isLiked = Array.isArray(post.likes) && post.likes.some(
+    (id) => String(id) === String(userId)
+  );
 
   const getUserTypeLabel = (userType) => {
     const labels = {
@@ -575,6 +826,59 @@ function PostCard({ post, userId, onLike, onReadMore }) {
           </div>
         </div>
       </div>
+
+      {post.eventId && typeof post.eventId === "object" && (
+        <div className="px-4 py-3 bg-primary/5 border-b border-primary/15">
+          <div className="flex items-start gap-2">
+            <Calendar className="w-4 h-4 mt-0.5 text-primary shrink-0" />
+            <div className="min-w-0 space-y-1">
+              <p className="text-xs font-semibold uppercase tracking-wide text-primary">
+                Event
+              </p>
+              <p className="font-semibold text-sm">{post.eventId.title}</p>
+              <p className="text-xs text-muted-foreground">
+                {new Date(post.eventId.startAt).toLocaleString(undefined, {
+                  dateStyle: "medium",
+                  timeStyle: "short",
+                })}
+                {post.eventId.endAt &&
+                  ` – ${new Date(post.eventId.endAt).toLocaleTimeString(undefined, {
+                    timeStyle: "short",
+                  })}`}
+              </p>
+              {post.eventId.hosts?.length > 0 && (
+                <p className="text-xs text-muted-foreground">
+                  Hosts: {post.eventId.hosts.join(", ")}
+                </p>
+              )}
+              {post.eventId.isOnline ? (
+                <span className="inline-block text-[10px] uppercase bg-primary/15 text-primary px-2 py-0.5 rounded">
+                  Online
+                </span>
+              ) : (
+                post.eventId.location && (
+                  <p className="text-xs flex items-center gap-1 text-muted-foreground">
+                    <MapPin className="w-3 h-3 shrink-0" />
+                    {post.eventId.location}
+                  </p>
+                )
+              )}
+              {post.eventId.meetUrl && (
+                <a
+                  href={post.eventId.meetUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1 text-xs text-primary font-medium hover:underline pt-1"
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  <Link2 className="w-3 h-3" />
+                  Join video room
+                </a>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Post Content */}
       {post.content && (

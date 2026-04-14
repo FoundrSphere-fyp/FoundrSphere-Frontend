@@ -43,11 +43,6 @@ const menuItems = [
         description: "Join communities of like-minded founders"
       },
       { 
-        title: "Discussions", 
-        href: "/community/discussions",
-        description: "Engage in meaningful conversations"
-      },
-      { 
         title: "Workshops", 
         href: "/community/workshops",
         description: "Learn from industry experts"

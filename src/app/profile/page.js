@@ -316,6 +316,22 @@ export default function ProfilePage() {
               />
               <InfoRow label="Location" value={profile.location} />
               <InfoRow label="Business model" value={profile.businessModel} />
+              <InfoRow label="Founder role" value={profile.founderRole} />
+              <InfoRow label="Commitment" value={profile.commitmentLevel} />
+              {profile.desiredCofounderRoles?.length > 0 && (
+                <InfoRow
+                  label="Desired co-founder roles"
+                  value={profile.desiredCofounderRoles.join(", ")}
+                />
+              )}
+              <InfoRow
+                label="Desired co-founder commitment"
+                value={profile.desiredCommitmentLevel}
+              />
+              <InfoRow
+                label="Co-founder preference"
+                value={profile.cofounderPreferenceText}
+              />
               {(profile.traction?.users != null ||
                 profile.traction?.revenue != null) && (
                 <InfoRow

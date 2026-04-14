@@ -28,7 +28,10 @@ export default function FoundersPage() {
   const currentUserId =
     typeof window !== "undefined" ? localStorage.getItem("userId") : null
 
-  const showRecSwitch = userType === "investor"
+  const showRecSwitch = userType === "investor" || userType === "founder"
+  const recommendationMode = userType === "founder" ? "cofounders" : "founders"
+  const recommendationLabel =
+    userType === "founder" ? "Recommended co-founders" : "Suggested startups"
 
   useEffect(() => {
     setUserType(localStorage.getItem("userType") || "")
@@ -132,14 +135,14 @@ export default function FoundersPage() {
                 value={view}
                 onChange={setView}
                 allLabel="All founders"
-                recLabel="Suggested startups"
+                recLabel={recommendationLabel}
               />
             )}
           </div>
         </div>
 
         {showRecSwitch && view === "recommended" ? (
-          <RecommendationsPanel mode="founders" active />
+          <RecommendationsPanel mode={recommendationMode} active />
         ) : founders.length === 0 ? (
           <Card className="p-12 text-center">
             <div className="space-y-4">

@@ -25,6 +25,8 @@ import {
   FUNDING_STAGE_OPTIONS,
   INVESTOR_TYPES,
   BUSINESS_MODELS,
+  COFOUNDER_ROLES,
+  COMMITMENT_LEVELS,
 } from "@/lib/select-options"
 
 function toggleMulti(value, current, setter) {
@@ -80,6 +82,11 @@ export default function AccountSettingsPage() {
   const [fundingNeeded, setFundingNeeded] = useState("")
   const [location, setLocation] = useState("")
   const [businessModel, setBusinessModel] = useState(null)
+  const [founderRole, setFounderRole] = useState(null)
+  const [commitmentLevel, setCommitmentLevel] = useState(null)
+  const [desiredCofounderRoles, setDesiredCofounderRoles] = useState([])
+  const [desiredCommitmentLevel, setDesiredCommitmentLevel] = useState(null)
+  const [cofounderPreferenceText, setCofounderPreferenceText] = useState("")
   const [tractionUsers, setTractionUsers] = useState("")
   const [tractionRevenue, setTractionRevenue] = useState("")
 
@@ -129,6 +136,11 @@ export default function AccountSettingsPage() {
         )
         setLocation(profile.location || "")
         setBusinessModel(profile.businessModel || null)
+        setFounderRole(profile.founderRole || null)
+        setCommitmentLevel(profile.commitmentLevel || null)
+        setDesiredCofounderRoles(profile.desiredCofounderRoles || [])
+        setDesiredCommitmentLevel(profile.desiredCommitmentLevel || null)
+        setCofounderPreferenceText(profile.cofounderPreferenceText || "")
         setTractionUsers(
           profile?.traction?.users != null ? String(profile.traction.users) : ""
         )
@@ -187,6 +199,11 @@ export default function AccountSettingsPage() {
                 fundingNeeded,
                 location,
                 businessModel: businessModel || "",
+                founderRole: founderRole || "",
+                commitmentLevel: commitmentLevel || "",
+                desiredCofounderRoles,
+                desiredCommitmentLevel: desiredCommitmentLevel || "",
+                cofounderPreferenceText,
                 tractionUsers,
                 tractionRevenue,
               },
@@ -457,6 +474,95 @@ export default function AccountSettingsPage() {
                       </Chip>
                     ))}
                   </div>
+                </div>
+
+                <div className="space-y-2">
+                  <Label>Your role in startup</Label>
+                  <div className="flex flex-wrap gap-2">
+                    {COFOUNDER_ROLES.map((option) => (
+                      <Chip
+                        key={option}
+                        selected={founderRole === option}
+                        onClick={() =>
+                          setFounderRole(founderRole === option ? null : option)
+                        }
+                      >
+                        {option}
+                      </Chip>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <Label>Your commitment</Label>
+                  <div className="flex flex-wrap gap-2">
+                    {COMMITMENT_LEVELS.map((option) => (
+                      <Chip
+                        key={option}
+                        selected={commitmentLevel === option}
+                        onClick={() =>
+                          setCommitmentLevel(
+                            commitmentLevel === option ? null : option
+                          )
+                        }
+                      >
+                        {option}
+                      </Chip>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <Label>Desired co-founder role(s)</Label>
+                  <div className="flex flex-wrap gap-2">
+                    {COFOUNDER_ROLES.map((option) => (
+                      <Chip
+                        key={option}
+                        selected={desiredCofounderRoles.includes(option)}
+                        onClick={() =>
+                          toggleMulti(
+                            option,
+                            desiredCofounderRoles,
+                            setDesiredCofounderRoles
+                          )
+                        }
+                      >
+                        {option}
+                      </Chip>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <Label>Desired co-founder commitment</Label>
+                  <div className="flex flex-wrap gap-2">
+                    {COMMITMENT_LEVELS.map((option) => (
+                      <Chip
+                        key={option}
+                        selected={desiredCommitmentLevel === option}
+                        onClick={() =>
+                          setDesiredCommitmentLevel(
+                            desiredCommitmentLevel === option ? null : option
+                          )
+                        }
+                      >
+                        {option}
+                      </Chip>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="cofounderPreferenceText">
+                    Co-founder preference
+                  </Label>
+                  <Textarea
+                    id="cofounderPreferenceText"
+                    value={cofounderPreferenceText}
+                    onChange={(e) => setCofounderPreferenceText(e.target.value)}
+                    placeholder="Describe skills/experience/working style you want in a co-founder."
+                    className="min-h-[120px] resize-y"
+                  />
                 </div>
 
                 <div className="grid gap-4 sm:grid-cols-2">
