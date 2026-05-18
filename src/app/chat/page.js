@@ -9,6 +9,7 @@ import { MessageCircle, Search, Loader2, Users, Clock } from 'lucide-react';
 import { useUserStore } from '@/store/store';
 import toast from 'react-hot-toast';
 
+
 export default function ChatInboxPage() {
   const [conversations, setConversations] = useState([]);
   const [filteredConversations, setFilteredConversations] = useState([]);
