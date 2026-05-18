@@ -75,7 +75,11 @@ export default function page() {
         "isProfileComplete",
         String(Boolean(res.user.isProfileComplete))
       )
-      router.push("/dashboard")
+      if (res.user.userType === "admin") {
+        router.push("/admin")
+      } else {
+        router.push("/dashboard")
+      }
     }
     else {
       toast.error(res.message);
