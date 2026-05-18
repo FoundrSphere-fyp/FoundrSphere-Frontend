@@ -28,8 +28,6 @@ export default function ChatbotPage() {
   const [fetchingConversations, setFetchingConversations] = useState(true);
   const messagesEndRef = useRef(null);
   const router = useRouter();
-  const [sessionId, setSessionId] = useState(null);
-
   const { userId } = useUserStore();
 
   useEffect(() => {
@@ -175,16 +173,11 @@ export default function ChatbotPage() {
         body: JSON.stringify({
           conversationId: currentConversation._id,
           message: userMessage,
-          sessionId
         })
       });
 
       const data = await res.json();
       if (data.type === 'success') {
-         if (data.sessionId) {
-      setSessionId(data.sessionId);
-    }
-
         setMessages(prev => [...prev, data.message]);
         
         // Refresh conversations list to update titles
