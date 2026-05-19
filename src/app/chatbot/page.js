@@ -17,6 +17,8 @@ import {
 } from 'lucide-react';
 import { useUserStore } from '@/store/store';
 import toast from 'react-hot-toast';
+import ContextWindowBar from '@/components/ContextWindowBar';
+import { estimateContextFromMessages } from '@/lib/context-window';
 
 export default function ChatbotPage() {
   const [conversations, setConversations] = useState([]);
@@ -26,6 +28,7 @@ export default function ChatbotPage() {
   const [loading, setLoading] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [fetchingConversations, setFetchingConversations] = useState(true);
+  const [contextWindow, setContextWindow] = useState(null);
   const messagesEndRef = useRef(null);
   const router = useRouter();
   const { userId } = useUserStore();
@@ -80,6 +83,7 @@ export default function ChatbotPage() {
         setConversations([data.conversation, ...conversations]);
         setCurrentConversation(data.conversation);
         setMessages([]);
+        setContextWindow(null);
       }
     } catch (error) {
       console.error('Failed to create conversation:', error);
@@ -102,6 +106,7 @@ export default function ChatbotPage() {
       if (data.type === 'success') {
         setCurrentConversation(data.conversation);
         setMessages(data.conversation.messages || []);
+        if (data.contextWindow) setContextWindow(data.contextWindow);
       }
     } catch (error) {
       console.error('Failed to load conversation:', error);
@@ -130,6 +135,7 @@ export default function ChatbotPage() {
         if (currentConversation?._id === conversationId) {
           setCurrentConversation(null);
           setMessages([]);
+          setContextWindow(null);
         }
         toast.success('Conversation deleted');
       }
@@ -160,9 +166,19 @@ export default function ChatbotPage() {
       timestamp: new Date()
     };
     setMessages(prev => [...prev, tempUserMsg]);
+    setContextWindow(
+      estimateContextFromMessages([...messages, tempUserMsg])
+    );
 
     try {
       setLoading(true);
+
+      const conversationId = currentConversation?._id;
+      if (!conversationId) {
+        toast.error('Start or select a chat first');
+        setLoading(false);
+        return;
+      }
 
       const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/chatbot/message`, {
         method: 'POST',
@@ -171,7 +187,7 @@ export default function ChatbotPage() {
           'Authorization': `Bearer ${localStorage.getItem('token')}`
         },
         body: JSON.stringify({
-          conversationId: currentConversation._id,
+          conversationId,
           message: userMessage,
         })
       });
@@ -179,8 +195,7 @@ export default function ChatbotPage() {
       const data = await res.json();
       if (data.type === 'success') {
         setMessages(prev => [...prev, data.message]);
-        
-        // Refresh conversations list to update titles
+        if (data.contextWindow) setContextWindow(data.contextWindow);
         fetchConversations();
       } else {
         toast.error(data.message || 'Failed to send message');
@@ -283,6 +298,11 @@ export default function ChatbotPage() {
               </div>
             </div>
           </div>
+          {(contextWindow || loading) && (
+            <div className="mx-auto mt-3 max-w-4xl">
+              <ContextWindowBar contextWindow={contextWindow} loading={loading} />
+            </div>
+          )}
         </div>
 
         {/* Messages Area */}
@@ -329,12 +349,15 @@ export default function ChatbotPage() {
 
             {loading && (
               <div className="flex justify-start">
-                <div className="bg-muted border rounded-2xl p-4">
+                <div className="bg-muted border rounded-2xl p-4 space-y-3 min-w-[280px] max-w-md">
                   <div className="flex items-center space-x-2">
                     <Sparkles className="h-5 w-5 text-primary" />
                     <Loader2 className="h-4 w-4 animate-spin text-primary" />
                     <span className="text-sm text-muted-foreground">Thinking...</span>
                   </div>
+                  {contextWindow && (
+                    <ContextWindowBar contextWindow={contextWindow} loading />
+                  )}
                 </div>
               </div>
             )}
