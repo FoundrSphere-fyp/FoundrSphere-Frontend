@@ -29,6 +29,8 @@ export default function ChatbotPage() {
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [fetchingConversations, setFetchingConversations] = useState(true);
   const [contextWindow, setContextWindow] = useState(null);
+  const [memoryScope, setMemoryScope] = useState('conversation');
+  const [lastMemoryHits, setLastMemoryHits] = useState(null);
   const messagesEndRef = useRef(null);
   const router = useRouter();
   const { userId } = useUserStore();
@@ -84,11 +86,14 @@ export default function ChatbotPage() {
         setCurrentConversation(data.conversation);
         setMessages([]);
         setContextWindow(null);
+        setLastMemoryHits(null);
+        return data.conversation;
       }
     } catch (error) {
       console.error('Failed to create conversation:', error);
       toast.error('Failed to create conversation');
     }
+    return null;
   };
 
   const loadConversation = async (conversationId) => {
@@ -149,11 +154,9 @@ export default function ChatbotPage() {
     e.preventDefault();
     if (!input.trim() || loading) return;
 
-    // If no current conversation, create one first
-    if (!currentConversation) {
-      await createNewConversation();
-      // Wait a bit for state to update
-      await new Promise(resolve => setTimeout(resolve, 500));
+    let activeConversation = currentConversation;
+    if (!activeConversation) {
+      activeConversation = await createNewConversation();
     }
 
     const userMessage = input.trim();
@@ -173,7 +176,7 @@ export default function ChatbotPage() {
     try {
       setLoading(true);
 
-      const conversationId = currentConversation?._id;
+      const conversationId = activeConversation?._id;
       if (!conversationId) {
         toast.error('Start or select a chat first');
         setLoading(false);
@@ -189,6 +192,7 @@ export default function ChatbotPage() {
         body: JSON.stringify({
           conversationId,
           message: userMessage,
+          memoryScope,
         })
       });
 
@@ -196,6 +200,9 @@ export default function ChatbotPage() {
       if (data.type === 'success') {
         setMessages(prev => [...prev, data.message]);
         if (data.contextWindow) setContextWindow(data.contextWindow);
+        if (data.memory?.enabled) {
+          setLastMemoryHits(data.memory.hits ?? 0);
+        }
         fetchConversations();
       } else {
         toast.error(data.message || 'Failed to send message');
@@ -368,7 +375,37 @@ export default function ChatbotPage() {
 
         {/* Input Area */}
         <div className="bg-card border-t p-4">
-          <form onSubmit={sendMessage} className="max-w-4xl mx-auto">
+          <form onSubmit={sendMessage} className="max-w-4xl mx-auto space-y-3">
+            <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
+              <span className="font-medium text-foreground/80">Memory search:</span>
+              <button
+                type="button"
+                onClick={() => setMemoryScope('conversation')}
+                className={`rounded-full px-3 py-1 border transition-colors ${
+                  memoryScope === 'conversation'
+                    ? 'bg-primary text-primary-foreground border-primary'
+                    : 'bg-muted hover:bg-muted/80'
+                }`}
+              >
+                This chat only
+              </button>
+              <button
+                type="button"
+                onClick={() => setMemoryScope('all')}
+                className={`rounded-full px-3 py-1 border transition-colors ${
+                  memoryScope === 'all'
+                    ? 'bg-primary text-primary-foreground border-primary'
+                    : 'bg-muted hover:bg-muted/80'
+                }`}
+              >
+                All my chats
+              </button>
+              {lastMemoryHits !== null && (
+                <span className="ml-1">
+                  Last reply used {lastMemoryHits} memory snippet{lastMemoryHits === 1 ? '' : 's'}
+                </span>
+              )}
+            </div>
             <div className="flex items-end space-x-3">
               <div className="flex-1 relative">
                 <Textarea
