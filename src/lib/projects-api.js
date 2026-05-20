@@ -34,3 +34,12 @@ export async function updateProject(projectId, body) {
   })
   return res.json()
 }
+
+export async function createInvestment(body) {
+  const res = await fetch(`${api()}/projects/invest`, {
+    method: "POST",
+    headers: authHeaders(),
+    body: JSON.stringify(body),
+  })
+  return res.json()
+}

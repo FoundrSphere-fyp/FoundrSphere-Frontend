@@ -27,10 +27,11 @@ import {
   DollarSign,
   Building2,
   Pencil,
+  TrendingUp,
 } from "lucide-react"
 import toast from "react-hot-toast"
 import { fetchPublicProject } from "@/lib/profile-api"
-import { updateProject } from "@/lib/projects-api"
+import { updateProject, createInvestment } from "@/lib/projects-api"
 import { cn } from "@/lib/utils"
 import {
   INDUSTRY_OPTIONS,
@@ -47,6 +48,12 @@ function getOwnerId(project) {
   const o = project?.ownerId
   if (!o) return null
   return typeof o === "object" && o._id != null ? String(o._id) : String(o)
+}
+
+function getInvestorId(investment) {
+  const inv = investment?.investorId
+  if (!inv) return null
+  return typeof inv === "object" && inv._id != null ? String(inv._id) : String(inv)
 }
 
 function Chip({ children, selected, onClick }) {
@@ -82,8 +89,17 @@ export default function ProjectDetailPage() {
   const [project, setProject] = useState(null)
   const [investments, setInvestments] = useState([])
   const [currentUserId, setCurrentUserId] = useState(null)
+  const [userType, setUserType] = useState(null)
 
   const [editOpen, setEditOpen] = useState(false)
+  const [investOpen, setInvestOpen] = useState(false)
+  const [investing, setInvesting] = useState(false)
+  const [investAmount, setInvestAmount] = useState("")
+  const [investCurrency, setInvestCurrency] = useState("USD")
+  const [investStage, setInvestStage] = useState(null)
+  const [investVisibility, setInvestVisibility] = useState("public")
+  const [investConviction, setInvestConviction] = useState("")
+  const [investNotes, setInvestNotes] = useState("")
   const [saving, setSaving] = useState(false)
   const [title, setTitle] = useState("")
   const [description, setDescription] = useState("")
@@ -98,9 +114,9 @@ export default function ProjectDetailPage() {
   const [visibility, setVisibility] = useState("public")
 
   useEffect(() => {
-    setCurrentUserId(
-      typeof window !== "undefined" ? localStorage.getItem("userId") : null
-    )
+    if (typeof window === "undefined") return
+    setCurrentUserId(localStorage.getItem("userId"))
+    setUserType(localStorage.getItem("userType"))
   }, [])
 
   const loadProject = useCallback(async () => {
@@ -152,6 +168,65 @@ export default function ProjectDetailPage() {
     if (!project) return
     populateEditForm(project)
     setEditOpen(true)
+  }
+
+  const resetInvestForm = () => {
+    setInvestAmount("")
+    setInvestCurrency("USD")
+    setInvestStage(project?.stage || null)
+    setInvestVisibility("public")
+    setInvestConviction("")
+    setInvestNotes("")
+  }
+
+  const openInvest = () => {
+    resetInvestForm()
+    setInvestOpen(true)
+  }
+
+  const handleSubmitInvestment = async () => {
+    if (!projectId) return
+
+    const amountNum =
+      investAmount.trim() === "" ? undefined : Number(investAmount)
+    if (amountNum !== undefined && (Number.isNaN(amountNum) || amountNum < 0)) {
+      toast.error("Enter a valid amount or leave it blank.")
+      return
+    }
+
+    let conviction
+    if (investConviction.trim() !== "") {
+      conviction = Number(investConviction)
+      if (Number.isNaN(conviction) || conviction < 1 || conviction > 5) {
+        toast.error("Conviction level must be between 1 and 5.")
+        return
+      }
+    }
+
+    setInvesting(true)
+    try {
+      const data = await createInvestment({
+        projectId,
+        amount: amountNum,
+        currency: investCurrency.trim().toUpperCase() || "USD",
+        stage: investStage || undefined,
+        visibility: investVisibility,
+        convictionLevel: conviction,
+        notes: investNotes.trim() || undefined,
+      })
+
+      if (data.type === "success") {
+        toast.success(data.message || "Investment recorded.")
+        setInvestOpen(false)
+        await loadProject()
+      } else {
+        toast.error(data.message || "Could not record investment.")
+      }
+    } catch {
+      toast.error("Could not record investment.")
+    } finally {
+      setInvesting(false)
+    }
   }
 
   const handleSaveEdit = async () => {
@@ -228,6 +303,14 @@ export default function ProjectDetailPage() {
     Boolean(currentUserId) &&
     Boolean(ownerId) &&
     String(currentUserId) === String(ownerId)
+
+  const isInvestor = userType === "investor"
+  const alreadyInvested = investments.some(
+    (inv) =>
+      currentUserId && getInvestorId(inv) === String(currentUserId)
+  )
+  const canInvest =
+    isInvestor && Boolean(currentUserId) && !isOwner && !alreadyInvested
 
   const links = project.links || {}
 
@@ -410,10 +493,21 @@ export default function ProjectDetailPage() {
         )}
 
         <div>
-          <h2 className="mb-4 flex items-center gap-2 text-2xl font-semibold">
-            <DollarSign className="h-6 w-6" />
-            Funding & rounds
-          </h2>
+          <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+            <h2 className="flex items-center gap-2 text-2xl font-semibold">
+              <DollarSign className="h-6 w-6" />
+              Funding & rounds
+            </h2>
+            {canInvest && (
+              <Button onClick={openInvest}>
+                <TrendingUp className="mr-2 h-4 w-4" />
+                Invest in project
+              </Button>
+            )}
+            {isInvestor && alreadyInvested && !isOwner && (
+              <Badge variant="secondary">You already invested in this project</Badge>
+            )}
+          </div>
           {investments.length === 0 ? (
             <Card className="p-8 text-center text-muted-foreground">
               No public investment rounds recorded yet.
@@ -635,6 +729,140 @@ export default function ProjectDetailPage() {
                 <Loader2 className="h-4 w-4 animate-spin" />
               ) : (
                 "Save changes"
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={investOpen} onOpenChange={setInvestOpen}>
+        <DialogContent className="max-h-[min(90vh,800px)] overflow-y-auto sm:max-w-lg">
+          <DialogHeader>
+            <DialogTitle>Invest in project</DialogTitle>
+            <DialogDescription>
+              Record your investment in {project.title}. This will appear in funding
+              rounds based on visibility.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4 py-2">
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div className="space-y-2">
+                <Label htmlFor="inv-amount">Amount (optional)</Label>
+                <Input
+                  id="inv-amount"
+                  type="number"
+                  min={0}
+                  value={investAmount}
+                  onChange={(e) => setInvestAmount(e.target.value)}
+                  placeholder="e.g. 50000"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="inv-currency">Currency</Label>
+                <Input
+                  id="inv-currency"
+                  value={investCurrency}
+                  onChange={(e) => setInvestCurrency(e.target.value)}
+                  placeholder="USD"
+                />
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label>Round stage</Label>
+              <div className="flex flex-wrap gap-2">
+                {FUNDING_STAGE_OPTIONS.map((opt) => (
+                  <Chip
+                    key={opt}
+                    selected={investStage === opt}
+                    onClick={() =>
+                      setInvestStage(investStage === opt ? null : opt)
+                    }
+                  >
+                    {opt}
+                  </Chip>
+                ))}
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label>Visibility</Label>
+              <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap">
+                <Button
+                  type="button"
+                  variant={investVisibility === "public" ? "default" : "outline"}
+                  size="sm"
+                  onClick={() => setInvestVisibility("public")}
+                >
+                  Public
+                </Button>
+                <Button
+                  type="button"
+                  variant={
+                    investVisibility === "amount_hidden" ? "default" : "outline"
+                  }
+                  size="sm"
+                  onClick={() => setInvestVisibility("amount_hidden")}
+                >
+                  Hide amount
+                </Button>
+                <Button
+                  type="button"
+                  variant={investVisibility === "private" ? "default" : "outline"}
+                  size="sm"
+                  onClick={() => setInvestVisibility("private")}
+                >
+                  Private
+                </Button>
+              </div>
+              <p className="text-xs text-muted-foreground">
+                Private investments are not shown on this public project page.
+              </p>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="inv-conviction">Conviction (1–5, optional)</Label>
+              <Input
+                id="inv-conviction"
+                type="number"
+                min={1}
+                max={5}
+                value={investConviction}
+                onChange={(e) => setInvestConviction(e.target.value)}
+                placeholder="1 = low, 5 = high"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="inv-notes">Notes (optional)</Label>
+              <Textarea
+                id="inv-notes"
+                value={investNotes}
+                onChange={(e) => setInvestNotes(e.target.value)}
+                placeholder="Why you're investing, terms, etc."
+                className="min-h-[80px]"
+              />
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setInvestOpen(false)}
+            >
+              Cancel
+            </Button>
+            <Button
+              type="button"
+              onClick={handleSubmitInvestment}
+              disabled={investing}
+            >
+              {investing ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                "Submit investment"
               )}
             </Button>
           </DialogFooter>
